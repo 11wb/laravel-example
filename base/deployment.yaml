@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel
+  template:
+    metadata:
+      labels:
+        app: laravel
+    spec:
+      volumes:
+      - name: app-volume
+        emptyDir: {}
+
+      # Step 1: Clone the repo
+      initContainers:
+      - name: git-clone
+        image: alpine/git
+        command: ['git', 'clone', '--depth=1', 'https://github.com/laravel/laravel.git', '/app']
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+
+      #Step 2: Create sql db file
+      - name: create-sqlite-file
+        image: busybox
+        command: ["sh", "-c", "mkdir -p /app/database && touch /app/database/database.sqlite"]
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+
+      # Step 2: Run composer install
+      - name: composer-install
+        image: laravelsail/php82-composer:latest
+        workingDir: /app
+        command: ["composer", "install", "--no-interaction", "--no-scripts"]
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+
+      # Step 4: init db
+      - name: migrate
+        image: laravelsail/php82-composer:latest
+        workingDir: /app
+        command: ["php", "artisan", "migrate", "--force"]
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+
+      containers:
+      - name: laravel
+        image: laravelsail/php82-composer:latest
+        workingDir: /app
+        command: ["php", "artisan", "serve", "--host=0.0.0.0"]
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: app-volume
+          mountPath: /app
+        env:
+        - name: APP_KEY
+          value: "base64:sC8wDlkQgSnp2j0eZ6h0mavRuwjhEHLi7A62DfiLunE="
+        - name: APP_ENV
+          value: "production"
+        - name: APP_DEBUG
+          value: "false"
+        # Add other env vars like DB_CONNECTION, DB_HOST etc. here too
