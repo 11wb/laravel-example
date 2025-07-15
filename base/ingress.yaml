@@ -9,7 +9,7 @@ metadata:
 spec:
   ingressClassName: nginx-fundaments
   rules:
-  - host: laravel.clubplanner.fundaments.support
+  - host: laravel-argo.clubplanner.fundaments.support
     http:
       paths:
       - path: /
@@ -21,5 +21,5 @@ spec:
               number: 80
   tls:
     - hosts:
-        - laravel.clubplanner.fundaments.support
+        - laravel-argo.clubplanner.fundaments.support
       secretName: laravel-server-tls
